@@ -1,7 +1,10 @@
+import datetime
 import json
+import logging
 import os
 import pickle
 import re
+import time
 
 import numpy as np
 import pymorphy2
@@ -19,6 +22,8 @@ nltk.download("stopwords")
 nltk.download("punkt")
 nltk.download("wordnet")
 nltk.download("omw-1.4")
+
+logger = logging.getLogger(__name__)
 
 
 class ML:
@@ -42,12 +47,19 @@ class ML:
         return cls
 
     def predict(self, data: list[ProductPredict]) -> list[Product]:
-        data = [i.dict() for i in data]
-        for i, v in enumerate(data):
-            data[i]["name"] = self._data_prepare([v["name"]], ru=True)
-            data[i]["props"] = self._data_prepare([" ".join(v["props"])], en=True)
+        d = datetime.datetime.now()
 
-        return [self._predict(i["id"], i["name"], i["props"]) for i in data]
+        ids = [i.id for i in data]
+        names = self._data_prepare([i.name for i in data], ru=True)
+        props = self._data_prepare([" ".join(i.props) for i in data], en=True)
+
+        r = self._predict(ids, names, props)
+
+        # d = datetime.datetime.now()
+        # r = [self._predict(i["id"], i["name"], i["props"]) for i in data]
+        # print("Predict", datetime.datetime.now() - d)
+
+        return r
 
     @staticmethod
     def _data_prepare(language_dict: list[str], ru=False, en=False, es=False):
@@ -84,7 +96,8 @@ class ML:
             dict_prepared.append(filtered_text)
         return np.array(dict_prepared)
 
-    def _predict(self, id_: str, name: str, props: str) -> Product:
+    def _predict(self, ids: list[str], name: list[str], props: list[str]) -> \
+            list[Product]:
         target_pred = self.target_model.predict_proba(name)
         mean_pred = self.mean_model.predict_proba(self.mean_vectorizer.transform(name))
         all_pred = self.all_model.predict_proba(name)
@@ -113,11 +126,14 @@ class ML:
         reference_ids = [[self.label2id[str(x)] for x in label] for label in ind]
         scores = 1 - dist
 
-        return Product(
-            id=id_,
-            reference_id=reference_ids and reference_ids[0][0],
-            scores=[
-                ProductScore(reference_id=ref_id, score=distance)
-                for ref_id, distance in zip(*reference_ids, *scores)
-            ],
-        )
+        return [
+            Product(
+                id=id_,
+                reference_id=reference_ids_ and reference_ids_[0],
+                scores=[
+                    ProductScore(reference_id=ref_id_, score=distance_)
+                    for ref_id_, distance_ in zip(reference_ids_, scores_)
+                ],
+            )
+            for id_, reference_ids_, scores_ in zip(ids, reference_ids, scores)
+        ]
