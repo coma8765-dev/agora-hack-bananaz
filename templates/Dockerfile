@@ -11,5 +11,6 @@ ADD Pipfile* ./
 RUN pipenv install --skip-lock
 
 COPY app ./app
+COPY assets ./assets
 
 CMD pipenv run python -m app

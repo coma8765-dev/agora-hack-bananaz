@@ -15,10 +15,10 @@ from app.schemas import *
 
 ML_SOURCES = os.getenv("ML_SOURCES", "./assets")
 
-nltk.download('stopwords')
-nltk.download('punkt')
-nltk.download('wordnet')
-nltk.download('omw-1.4')
+nltk.download("stopwords")
+nltk.download("punkt")
+nltk.download("wordnet")
+nltk.download("omw-1.4")
 
 
 class ML:
@@ -41,13 +41,10 @@ class ML:
 
         return cls
 
-    def retrain(self, data_path: str):
-        ...
-
     def predict(self, data: list[ProductPredict]) -> list[Product]:
         data = [i.dict() for i in data]
         for i, v in enumerate(data):
-            data[i]["name"] = self._data_prepare([v["name"]], en=True)
+            data[i]["name"] = self._data_prepare([v["name"]], ru=True)
             data[i]["props"] = self._data_prepare([" ".join(v["props"])], en=True)
 
         return [self._predict(i["id"], i["name"], i["props"]) for i in data]
@@ -64,11 +61,12 @@ class ML:
             stop_words = set(stopwords.words("spanish"))
             lemmatizer = nltk.stem.SnowballStemmer("spanish")
         else:
-            raise Exception("Language not support")
+            raise Exception("Lang no support")
 
         dict_prepared = []
 
         for text in tqdm(language_dict):
+            text = text.lower()
             numbers = re.findall(r"[0-9]+", text)
 
             word_tokens = word_tokenize(text)
@@ -123,6 +121,3 @@ class ML:
                 for ref_id, distance in zip(*reference_ids, *scores)
             ],
         )
-
-    def change_version(self, version_id: int):
-        ...
