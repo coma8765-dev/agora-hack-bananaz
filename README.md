@@ -3,7 +3,7 @@
 ##  Запуск приложения Docker
 
 ```shell
-docker run -p 8000:8000 coma666/bananaz:latest
+docker run -p 8000:8000 coma666/bananaz
 ```
 
 ##  Запуск приложения без Docker
